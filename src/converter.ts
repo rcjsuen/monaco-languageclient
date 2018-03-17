@@ -78,6 +78,17 @@ export class MonacoToProtocolConverter {
         };
     }
 
+    asTextEdit(edit: monaco.editor.ISingleEditOperation): TextEdit {
+        return {
+            newText: edit.text,
+            range: this.asRange(edit.range)
+        }
+    }
+
+    asTextEdits(edits: monaco.editor.ISingleEditOperation[]): TextEdit[] {
+        return edits.map((edit) => this.asTextEdit(edit));
+    }
+
     asTextDocumentIdentifier(model: IReadOnlyModel): TextDocumentIdentifier {
         return {
             uri: model.uri.toString()
@@ -106,7 +117,7 @@ export class MonacoToProtocolConverter {
             }
         }
         if (item.sortText) { result.sortText = item.sortText; }
-        // TODO: if (item.additionalTextEdits) { result.additionalTextEdits = asTextEdits(item.additionalTextEdits); }
+        if (item.additionalTextEdits) { result.additionalTextEdits = this.asTextEdits(item.additionalTextEdits); }
         // TODO: if (item.command) { result.command = asCommand(item.command); }
         if (ProtocolCompletionItem.is(item)) {
             result.data = item.data;
@@ -301,6 +312,23 @@ export class ProtocolToMonacoConverter {
         return {
             edits
         };
+    }
+
+    asSingleEditOperation(edit: TextEdit): monaco.editor.ISingleEditOperation {
+        return {
+            range: this.asRange(edit.range)!,
+            text: edit.newText
+        }
+    }
+
+    asSingleEditOperations(items: TextEdit[]): monaco.editor.ISingleEditOperation[];
+    asSingleEditOperations(items: undefined | null): undefined;
+    asSingleEditOperations(items: TextEdit[] | undefined | null): monaco.editor.ISingleEditOperation[] | undefined;
+    asSingleEditOperations(items: TextEdit[] | undefined | null): monaco.editor.ISingleEditOperation[] | undefined {
+        if (!items) {
+            return undefined;
+        }
+        return items.map(item => this.asTextEdit(item));
     }
 
     asTextEdit(edit: TextEdit): monaco.languages.TextEdit {
@@ -590,7 +618,7 @@ export class ProtocolToMonacoConverter {
         // Protocol item kind is 1 based, codes item kind is zero based.
         if (is.number(item.kind) && item.kind > 0) { result.kind = item.kind - 1; }
         if (item.sortText) { result.sortText = item.sortText; }
-        // TODO: if (item.additionalTextEdits) { result.additionalTextEdits = asTextEdits(item.additionalTextEdits); }
+        if (item.additionalTextEdits) { result.additionalTextEdits = this.asSingleEditOperations(item.additionalTextEdits); }
         // TODO: if (item.command) { result.command = asCommand(item.command); }
         if (item.data !== void 0 && item.data !== null) { result.data = item.data; }
         return result;
