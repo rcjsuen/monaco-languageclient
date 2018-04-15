@@ -39,7 +39,11 @@ if (process.env['NODE_ENV'] === 'production') {
             new UglifyJSPlugin(),
             new webpack.DefinePlugin({
                 'process.env.NODE_ENV': JSON.stringify('production')
-            })
+            }),
+            new webpack.ContextReplacementPlugin(
+                /vs*/,
+                path.join(__dirname, './client')
+            )
         ]
     });
 } else {
@@ -51,6 +55,12 @@ if (process.env['NODE_ENV'] === 'production') {
                 enforce: 'pre',
                 loader: 'source-map-loader'
             }]
-        }
+        },
+        plugins: [
+            new webpack.ContextReplacementPlugin(
+                /vs*/,
+                path.join(__dirname, './client')
+            )
+        ]
     })
 } 
